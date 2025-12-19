@@ -39,6 +39,10 @@ export function SettingsPanel() {
             <div className="panel-header">Settings</div>
             <div className="settings-content">
                 <div className="form-group">
+                    <label>AEDB Version</label>
+                    <input type="text" name="aedbVersion" value={settings.aedbVersion} onChange={handleChange} placeholder="e.g. 2024.1" />
+                </div>
+                <div className="form-group">
                     <label>Sigma_w (%)</label>
                     <input type="number" name="sigma_w" value={settings.sigma_w} onChange={handleChange} />
                 </div>

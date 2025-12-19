@@ -3,8 +3,9 @@ import sys
 import os
 
 # Add parent directory to path to import trace.py if it's in the root
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import trace
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# import trace
+from backend import trace_generator as trace
 
 class EdbManager:
     def __init__(self):
@@ -13,7 +14,7 @@ class EdbManager:
         self.variation_data = {}
         self.generated_data = {} # Map of original_id -> {points, width, layer, net, type}
 
-    def load_edb(self, path):
+    def load_edb(self, path, version="2024.1"):
         if self.edb:
             try:
                 self.edb.close_edb()
@@ -21,10 +22,11 @@ class EdbManager:
                 pass
         
         self.edb_path = path
+        self.edb_version = version
         self.generated_data = {}
         self.variation_data = {}
         # You might want to make the version configurable
-        self.edb = Edb(path, edbversion="2024.1") 
+        self.edb = Edb(path, edbversion=version) 
         return self.get_nets()
 
     def get_nets(self):
@@ -85,7 +87,7 @@ class EdbManager:
             
             # 3. Open the NEW file to apply changes
             print(f"DEBUG: Opening new EDB from {path}")
-            temp_edb = Edb(path, edbversion="2024.1")
+            temp_edb = Edb(path, edbversion=self.edb_version)
             
             # 4. Apply variations to the NEW file
             print(f"DEBUG: Applying {len(self.generated_data)} variations to saved file")
@@ -114,7 +116,7 @@ class EdbManager:
             
             # 6. Re-open the ORIGINAL file to restore session
             print(f"DEBUG: Re-opening original EDB from {original_path}")
-            self.edb = Edb(original_path, edbversion="2024.1")
+            self.edb = Edb(original_path, edbversion=self.edb_version)
             self.edb_path = original_path # Ensure path is consistent
             
             return True

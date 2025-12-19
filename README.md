@@ -50,12 +50,18 @@ A tool for generating line width variations (wavy lines) in Ansys EDB files to s
 
 3.  **Configure Settings**:
     *   Use the **Settings Panel** (left sidebar) to adjust generation parameters:
-        *   `Sigma_w (%)`: Amplitude of width variation relative to the mean width.
-        *   `L_c`: Correlation length.
-        *   `Model`: Statistical model (Gaussian, Exponential, Matern32, etc.).
-        *   `ds_arc`: Discretization step for the arcs.
-        *   `n_resample`: Number of resampling points.
-        *   `w_min` / `w_max`: Minimum and maximum width constraints (%).
+        *   `AEDB Version`: The Ansys Electronics Desktop version to use (e.g., "2024.1", "2023.2").
+        *   `Sigma_w (%)`: **Width Variation Amplitude**. The standard deviation of the width variation, expressed as a percentage of the original trace width. Higher values create more pronounced width changes.
+        *   `L_c`: **Correlation Length**. Controls how quickly the width changes along the trace.
+            *   Small `L_c`: Rapid, high-frequency variations (rougher).
+            *   Large `L_c`: Slow, smooth variations.
+        *   `Model`: **Statistical Model**. The covariance function used to generate the random variation.
+            *   `Gaussian`: Very smooth variation.
+            *   `Exponential`: Rougher, less correlated variation.
+            *   `Matern32`: A balance between Gaussian and Exponential (often realistic for manufacturing roughness).
+        *   `ds_arc`: **Discretization Step**. The maximum segment length for the generated arcs. Smaller values produce smoother curves but increase file size and processing time.
+        *   `n_resample`: **Resampling Points**. The number of points used to generate the initial random profile before mapping it to the trace geometry.
+        *   `w_min` / `w_max`: **Width Constraints**. Hard limits for the minimum and maximum width, expressed as a percentage of the original width. This prevents the trace from becoming too thin (open circuit risk) or too wide (short circuit risk).
 
 4.  **Generate**:
     *   Click the **Generate** button at the bottom of the Settings Panel.

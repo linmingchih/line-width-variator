@@ -50,12 +50,18 @@
 
 3.  **設定參數**：
     *   使用左側邊欄的 **Settings Panel** 調整產生參數：
-        *   `Sigma_w (%)`：線寬變異相對於平均寬度的幅度。
-        *   `L_c`：相關長度 (Correlation length)。
-        *   `Model`：統計模型 (Gaussian, Exponential, Matern32 等)。
-        *   `ds_arc`：圓弧的離散化步長。
-        *   `n_resample`：重取樣點數。
-        *   `w_min` / `w_max`：最小與最大寬度限制 (%)。
+        *   `AEDB Version`：使用的 Ansys Electronics Desktop 版本（例如 "2024.1", "2023.2"）。
+        *   `Sigma_w (%)`：**線寬變異幅度**。線寬變異的標準差，以原始線寬的百分比表示。數值越高，寬度變化越明顯。
+        *   `L_c`：**相關長度 (Correlation Length)**。控制線寬沿著走線變化的快慢。
+            *   較小的 `L_c`：快速、高頻的變化（較粗糙）。
+            *   較大的 `L_c`：緩慢、平滑的變化。
+        *   `Model`：**統計模型**。用於產生隨機變異的共變異數函數。
+            *   `Gaussian`：非常平滑的變異。
+            *   `Exponential`：較粗糙、相關性較低的變異。
+            *   `Matern32`：介於 Gaussian 和 Exponential 之間（通常較符合實際製程粗糙度）。
+        *   `ds_arc`：**離散化步長**。產生圓弧時的最大線段長度。數值越小曲線越平滑，但檔案大小和處理時間會增加。
+        *   `n_resample`：**重取樣點數**。在映射到走線幾何之前，用於產生初始隨機輪廓的點數。
+        *   `w_min` / `w_max`：**寬度限制**。最小與最大寬度的硬性限制，以原始寬度的百分比表示。這可以防止走線變得太細（開路風險）或太寬（短路風險）。
 
 4.  **產生變異 (Generate)**：
     *   點擊 Settings Panel 底部的 **Generate** 按鈕。

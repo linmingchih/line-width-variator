@@ -15,7 +15,7 @@ declare global {
         greet: () => Promise<string>;
         open_file_dialog: () => Promise<string | null>;
         save_file_dialog: () => Promise<string | null>;
-        load_edb: (path: string) => Promise<{ nets: any[] } | { error: string }>;
+        load_edb: (path: string, version: string) => Promise<{ nets: any[] } | { error: string }>;
         save_edb: (path: string) => Promise<boolean>;
         generate_variation: (settings: any) => Promise<boolean>;
         get_primitive_stats: (id: string | number) => Promise<{ s: number[], w_s: number[] } | null>;
@@ -26,7 +26,7 @@ declare global {
 }
 
 function App() {
-  const { setNets } = useStore();
+  const { setNets, settings } = useStore();
   const [loading, setLoading] = useState(false);
 
   const handleOpen = async () => {
@@ -34,7 +34,7 @@ function App() {
     const path = await window.pywebview.api.open_file_dialog();
     if (path) {
       setLoading(true);
-      const data = await window.pywebview.api.load_edb(path);
+      const data = await window.pywebview.api.load_edb(path, settings.aedbVersion);
       setLoading(false);
       if ('nets' in data) {
         setNets(data.nets);

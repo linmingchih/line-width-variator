@@ -21,6 +21,7 @@ interface Settings {
     n_resample: number;
     w_min: number;
     w_max: number;
+    aedbVersion: string;
 }
 
 interface AppState {
@@ -28,11 +29,13 @@ interface AppState {
     selectedPrimitiveId: string | number | null;
     settings: Settings;
     variationStats: { s: number[], w_s: number[], mu_w: number } | null;
+    isLoading: boolean;
 
     setNets: (nets: Net[]) => void;
     selectPrimitive: (id: string | number | null) => void;
     updateSettings: (settings: Partial<Settings>) => void;
     setVariationStats: (stats: { s: number[], w_s: number[], mu_w: number } | null) => void;
+    setLoading: (loading: boolean) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -45,12 +48,15 @@ export const useStore = create<AppState>((set) => ({
         ds_arc: 2e-4,
         n_resample: 1200,
         w_min: 80,
-        w_max: 120
+        w_max: 120,
+        aedbVersion: "2024.1"
     },
     variationStats: null,
+    isLoading: false,
 
     setNets: (nets) => set({ nets }),
     selectPrimitive: (id) => set({ selectedPrimitiveId: id }),
     updateSettings: (newSettings) => set((state) => ({ settings: { ...state.settings, ...newSettings } })),
     setVariationStats: (stats) => set({ variationStats: stats }),
+    setLoading: (loading) => set({ isLoading: loading }),
 }));

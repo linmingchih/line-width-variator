@@ -36,10 +36,10 @@ class Api:
             return result
         return None
     
-    def load_edb(self, path):
-        print(f"Loading EDB from {path}")
+    def load_edb(self, path, version="2024.1"):
+        print(f"Loading EDB from {path} with version {version}")
         try:
-            return self.edb_manager.load_edb(path)
+            return self.edb_manager.load_edb(path, version)
         except Exception as e:
             print(f"Error loading EDB: {e}")
             return {"error": str(e)}
