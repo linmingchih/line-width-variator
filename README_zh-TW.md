@@ -1,5 +1,7 @@
 # Line Width Variator (線寬變異產生器)
 
+繁體中文 | [English](README.md)
+
 這是一個用於在 Ansys EDB 檔案中產生線寬變異（波浪線）的工具，旨在模擬製程粗糙度並分析其對訊號完整性的影響。
 
 ## 功能特色

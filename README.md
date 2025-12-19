@@ -1,5 +1,7 @@
 # Line Width Variator
 
+[繁體中文](README_zh-TW.md) | English
+
 A tool for generating line width variations (wavy lines) in Ansys EDB files to simulate manufacturing roughness and analyze its impact on signal integrity.
 
 ## Features
