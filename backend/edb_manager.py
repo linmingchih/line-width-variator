@@ -33,6 +33,13 @@ class EdbManager:
             primitives = []
             for p in net.primitives:
                 if p.type == "Path": # Only interested in Paths for now
+                    # DEBUG: Print first primitive points
+                    if not nets_data:
+                        print(f"DEBUG: First Path Points: {p.center_line[:5]}")
+                        print(f"DEBUG: Type of center_line: {type(p.center_line)}")
+                        if len(p.center_line) > 0:
+                            print(f"DEBUG: Type of point: {type(p.center_line[0])}")
+
                     prim_data = {
                         "id": p.id,
                         "type": p.type,
@@ -179,7 +186,8 @@ class EdbManager:
                 # Let's just store it for now.
                 self.variation_data[p.id] = {
                     "s": s.tolist(),
-                    "w_s": w_s.tolist()
+                    "w_s": w_s.tolist(),
+                    "mu_w": current_width
                 }
 
                 # Update EDB

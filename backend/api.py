@@ -22,8 +22,14 @@ class Api:
         return result[0] if result else None
 
     def save_file_dialog(self):
-        file_types = ('EDB Files (*.aedb)', 'All files (*.*)')
-        result = self._window.create_file_dialog(webview.SAVE_DIALOG, allow_multiple=False, file_types=file_types)
+        # EDB is a folder, but webview.SAVE_DIALOG might expect a file.
+        # However, for "Save As", we usually want to pick a folder name.
+        # Let's try SAVE_DIALOG but be aware it might return a file path.
+        # Actually, for EDB "Save As", we are saving a folder.
+        # webview.SAVE_DIALOG is usually for files.
+        # If we use FOLDER_DIALOG, we pick a directory, but we can't type a new name easily.
+        # Let's stick to SAVE_DIALOG and ensure it ends with .aedb
+        result = self._window.create_file_dialog(webview.SAVE_DIALOG, allow_multiple=False, save_filename='new_project.aedb')
         return result if result else None
     
     def load_edb(self, path):

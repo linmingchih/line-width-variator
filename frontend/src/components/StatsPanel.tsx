@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 
 export function StatsPanel() {
     const { selectedPrimitiveId, variationStats, setVariationStats } = useStore();
@@ -10,7 +10,7 @@ export function StatsPanel() {
         const fetchStats = async () => {
             if (selectedPrimitiveId && window.pywebview) {
                 setLoading(true);
-                const stats = await window.pywebview.api.get_primitive_stats(selectedPrimitiveId);
+                const stats = await window.pywebview.api.get_primitive_stats(selectedPrimitiveId) as { s: number[], w_s: number[], mu_w: number };
                 setVariationStats(stats);
                 setLoading(false);
             } else {
@@ -47,9 +47,13 @@ export function StatsPanel() {
                     <LineChart data={data}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#444" />
                         <XAxis dataKey="s" stroke="#888" label={{ value: 'Path Length', position: 'insideBottom', offset: -5 }} />
-                        <YAxis stroke="#888" label={{ value: 'Width', angle: -90, position: 'insideLeft' }} />
+                        <YAxis stroke="#888" label={{ value: 'Width', angle: -90, position: 'insideLeft' }} domain={['auto', 'auto']} />
                         <Tooltip contentStyle={{ backgroundColor: '#333', border: '1px solid #555' }} />
-                        <Line type="monotone" dataKey="width" stroke="#007acc" dot={false} />
+                        <Legend />
+                        <Line type="monotone" dataKey="width" stroke="#007acc" dot={false} name="Varied Width" />
+                        {variationStats.mu_w && (
+                            <ReferenceLine y={variationStats.mu_w} stroke="red" strokeDasharray="3 3" label="Original Width" />
+                        )}
                     </LineChart>
                 </ResponsiveContainer>
             </div>

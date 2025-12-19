@@ -16,10 +16,6 @@ export function SettingsPanel() {
             <div className="panel-header">Settings</div>
             <div className="settings-content">
                 <div className="form-group">
-                    <label>Mu_w (Default Width)</label>
-                    <input type="number" name="mu_w" value={settings.mu_w} onChange={handleChange} step="0.00001" />
-                </div>
-                <div className="form-group">
                     <label>Sigma_w (%)</label>
                     <input type="number" name="sigma_w" value={settings.sigma_w} onChange={handleChange} />
                 </div>

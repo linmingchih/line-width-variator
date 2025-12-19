@@ -69,7 +69,7 @@ function App() {
         <div className="logo">Line Width Variator</div>
         <div className="toolbar">
           <button onClick={handleOpen}><FolderOpen size={16} /> Open</button>
-          <button onClick={handleSave}><Save size={16} /> Save</button>
+          <button onClick={handleSave}><Save size={16} /> Save As</button>
           <button onClick={handleGenerate} className="primary"><Play size={16} /> Generate</button>
         </div>
       </header>

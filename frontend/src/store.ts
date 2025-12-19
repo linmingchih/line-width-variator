@@ -14,7 +14,6 @@ interface Net {
 }
 
 interface Settings {
-    mu_w: number;
     sigma_w: number;
     L_c: number;
     model: string;
@@ -28,19 +27,18 @@ interface AppState {
     nets: Net[];
     selectedPrimitiveId: string | number | null;
     settings: Settings;
-    variationStats: { s: number[], w_s: number[] } | null;
+    variationStats: { s: number[], w_s: number[], mu_w: number } | null;
 
     setNets: (nets: Net[]) => void;
     selectPrimitive: (id: string | number | null) => void;
     updateSettings: (settings: Partial<Settings>) => void;
-    setVariationStats: (stats: { s: number[], w_s: number[] } | null) => void;
+    setVariationStats: (stats: { s: number[], w_s: number[], mu_w: number } | null) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
     nets: [],
     selectedPrimitiveId: null,
     settings: {
-        mu_w: 0.0001, // This might be ignored if using primitive width
         sigma_w: 10,
         L_c: 0.002,
         model: 'matern32',

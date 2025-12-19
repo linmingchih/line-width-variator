@@ -1,5 +1,6 @@
 import { useStore } from '../store';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { TransformWrapper, TransformComponent, useControls } from 'react-zoom-pan-pinch';
+import { useEffect } from 'react';
 
 export function Canvas() {
     const { nets, selectedPrimitiveId, selectPrimitive } = useStore();
@@ -67,6 +68,16 @@ export function Canvas() {
         return d;
     };
 
+    const AutoFit = () => {
+        const { resetTransform } = useControls();
+        useEffect(() => {
+            if (nets.length > 0) {
+                resetTransform();
+            }
+        }, [nets, resetTransform]);
+        return null;
+    };
+
     return (
         <div className="canvas-container">
             <TransformWrapper
@@ -75,32 +86,38 @@ export function Canvas() {
                 maxScale={10000}
                 centerOnInit={true}
             >
-                <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
-                    <svg viewBox={viewBox} style={{ width: '100%', height: '100%' }} transform="scale(1, -1)">
-                        {nets.map(net => (
-                            <g key={net.name}>
-                                {net.primitives.map(p => (
-                                    <path
-                                        key={p.id}
-                                        d={createPath(p.points)}
-                                        stroke={selectedPrimitiveId === p.id ? '#00ff00' : '#007acc'}
-                                        strokeWidth={p.width}
-                                        fill="none"
-                                        opacity={0.8}
-                                        vectorEffect="non-scaling-stroke"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            selectPrimitive(p.id);
-                                        }}
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        <title>{net.name} (ID: {p.id})</title>
-                                    </path>
-                                ))}
-                            </g>
-                        ))}
-                    </svg>
-                </TransformComponent>
+                {() => (
+                    <>
+                        <AutoFit />
+                        <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
+                            <svg viewBox={viewBox} style={{ width: '100%', height: '100%' }}>
+                                <g transform="scale(1, -1)">
+                                    {nets.map(net => (
+                                        <g key={net.name}>
+                                            {net.primitives.map(p => (
+                                                <path
+                                                    key={p.id}
+                                                    d={createPath(p.points)}
+                                                    stroke={selectedPrimitiveId === p.id ? '#00ff00' : '#007acc'}
+                                                    strokeWidth="2px"
+                                                    fill="none"
+                                                    vectorEffect="non-scaling-stroke"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        selectPrimitive(p.id);
+                                                    }}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <title>{net.name} (ID: {p.id})</title>
+                                                </path>
+                                            ))}
+                                        </g>
+                                    ))}
+                                </g>
+                            </svg>
+                        </TransformComponent>
+                    </>
+                )}
             </TransformWrapper>
             {nets.length === 0 && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: '#666' }}>No EDB loaded</div>}
         </div>
