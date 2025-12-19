@@ -19,13 +19,14 @@ declare global {
         save_edb: (path: string) => Promise<boolean>;
         generate_variation: (settings: any) => Promise<boolean>;
         get_primitive_stats: (id: string | number) => Promise<{ s: number[], w_s: number[] } | null>;
+        get_nets: () => Promise<{ nets: any[] }>;
       };
     };
   }
 }
 
 function App() {
-  const { setNets, settings } = useStore();
+  const { setNets, settings, selectedPrimitiveId, setVariationStats } = useStore();
   const [loading, setLoading] = useState(false);
 
   const handleOpen = async () => {
@@ -56,11 +57,22 @@ function App() {
   const handleGenerate = async () => {
     if (!window.pywebview) return;
     setLoading(true);
-    await window.pywebview.api.generate_variation(settings);
+    const success = await window.pywebview.api.generate_variation(settings);
+    if (success) {
+      if (window.pywebview.api.get_nets) {
+        const data = await window.pywebview.api.get_nets();
+        if ('nets' in data) {
+          setNets(data.nets);
+        }
+      }
+
+      // Refresh stats if a primitive is selected
+      if (selectedPrimitiveId) {
+        const stats = await window.pywebview.api.get_primitive_stats(selectedPrimitiveId);
+        setVariationStats(stats as { s: number[], w_s: number[], mu_w: number } | null);
+      }
+    }
     setLoading(false);
-    // Reload nets/stats?
-    // For now, maybe just alert
-    alert("Variation generated!");
   };
 
   return (
