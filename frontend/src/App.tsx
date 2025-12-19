@@ -5,7 +5,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { NetsPanel } from './components/NetsPanel';
 import { Canvas } from './components/Canvas';
 import { StatsPanel } from './components/StatsPanel';
-import { Save, FolderOpen, Play } from 'lucide-react';
+import { Save, FolderOpen } from 'lucide-react';
 
 // Define the API interface
 declare global {
@@ -26,7 +26,7 @@ declare global {
 }
 
 function App() {
-  const { setNets, settings, selectedPrimitiveId, setVariationStats } = useStore();
+  const { setNets } = useStore();
   const [loading, setLoading] = useState(false);
 
   const handleOpen = async () => {
@@ -54,27 +54,6 @@ function App() {
     }
   };
 
-  const handleGenerate = async () => {
-    if (!window.pywebview) return;
-    setLoading(true);
-    const success = await window.pywebview.api.generate_variation(settings);
-    if (success) {
-      if (window.pywebview.api.get_nets) {
-        const data = await window.pywebview.api.get_nets();
-        if ('nets' in data) {
-          setNets(data.nets);
-        }
-      }
-
-      // Refresh stats if a primitive is selected
-      if (selectedPrimitiveId) {
-        const stats = await window.pywebview.api.get_primitive_stats(selectedPrimitiveId);
-        setVariationStats(stats as { s: number[], w_s: number[], mu_w: number } | null);
-      }
-    }
-    setLoading(false);
-  };
-
   return (
     <div className="app-container">
       <header className="app-header">
@@ -82,7 +61,6 @@ function App() {
         <div className="toolbar">
           <button onClick={handleOpen}><FolderOpen size={16} /> Open</button>
           <button onClick={handleSave}><Save size={16} /> Save As</button>
-          <button onClick={handleGenerate} className="primary"><Play size={16} /> Generate</button>
         </div>
       </header>
       <div className="main-content">
