@@ -72,34 +72,32 @@ class EdbManager:
             return False
 
         try:
+            # Capture original path
+            original_path = self.edb_path
+            
             # 1. Save As to the new path
             print(f"DEBUG: Calling self.edb.save_edb_as({path})")
             self.edb.save_edb_as(path)
             
-            # 2. Apply variations to the NEW file (which is now self.edb)
-            # Note: save_edb_as usually switches the active EDB to the new one.
-            # We need to verify if self.edb is now pointing to the new file.
-            # Usually pyedb updates the internal reference.
+            # 2. Close the current session (which is now pointing to the new file)
+            print("DEBUG: Closing EDB session (new file)")
+            self.edb.close_edb()
             
+            # 3. Open the NEW file to apply changes
+            print(f"DEBUG: Opening new EDB from {path}")
+            temp_edb = Edb(path, edbversion="2024.1")
+            
+            # 4. Apply variations to the NEW file
             print(f"DEBUG: Applying {len(self.generated_data)} variations to saved file")
             
-            # We need to iterate through generated_data and apply changes.
-            # The IDs should be preserved after Save As.
-            
             for orig_id, data in self.generated_data.items():
-                # Find the primitive in the current EDB
-                # We have to iterate to find it because we don't have direct access by ID
-                # This is inefficient but necessary if we can't lookup by ID.
-                # Or we can iterate nets again.
-                
                 found = False
-                for net_name, net in self.edb.nets.nets.items():
+                for net_name, net in temp_edb.nets.nets.items():
                     for p in net.primitives:
                         if p.id == orig_id:
                             # Found it!
-                            # Create polygon
                             poly_points = data["points"]
-                            self.edb.modeler.create_polygon_from_points(poly_points, p.layer_name, net_name)
+                            temp_edb.modeler.create_polygon_from_points(poly_points, p.layer_name, net_name)
                             p.delete()
                             found = True
                             break
@@ -109,9 +107,16 @@ class EdbManager:
                 if not found:
                     print(f"WARNING: Could not find primitive {orig_id} to apply variation")
 
-            # Save again to persist changes
-            self.edb.save_edb()
-            print("DEBUG: save_edb completed")
+            # 5. Save again to persist changes
+            temp_edb.save_edb()
+            temp_edb.close_edb()
+            print("DEBUG: save_edb completed on new file")
+            
+            # 6. Re-open the ORIGINAL file to restore session
+            print(f"DEBUG: Re-opening original EDB from {original_path}")
+            self.edb = Edb(original_path, edbversion="2024.1")
+            self.edb_path = original_path # Ensure path is consistent
+            
             return True
         except Exception as e:
             print(f"DEBUG: Error in save_edb: {e}")
@@ -125,8 +130,8 @@ class EdbManager:
         self.generated_data = {}
         self.variation_data = {}
 
-        # For now, apply to ALL paths. Later we can support selection.
-        for net_name, net in self.edb.nets.nets.items():
+        # Only apply to signal nets (those shown in the right panel)
+        for net_name, net in self.edb.nets.signal_nets.items():
             for p in net.primitives:
                 if p.type != "Path":
                     continue
