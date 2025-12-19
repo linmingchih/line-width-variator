@@ -58,9 +58,17 @@ class EdbManager:
         return {"nets": nets_data}
 
     def save_edb(self, path):
+        print(f"DEBUG: EdbManager.save_edb called with path: {path}")
         if self.edb:
-            self.edb.save_edb_as(path)
-            return True
+            try:
+                print(f"DEBUG: Calling self.edb.save_edb_as({path})")
+                self.edb.save_edb_as(path)
+                print("DEBUG: save_edb_as completed")
+                return True
+            except Exception as e:
+                print(f"DEBUG: Error in save_edb_as: {e}")
+                return False
+        print("DEBUG: self.edb is None")
         return False
 
     def apply_variation(self, settings):
