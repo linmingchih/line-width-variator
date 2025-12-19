@@ -6,7 +6,7 @@ new_edb_path = "../examples/pcb_new.aedb"
 
 edb = Edb(edb_path, version='2024.1')
 
-for net_name, net in edb.nets.nets.items():
+for net_name, net in edb.nets.signal_nets.items():
     for p in net.primitives:
         if p.type != "Path":
             continue
