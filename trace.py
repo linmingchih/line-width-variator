@@ -9,10 +9,10 @@ SENTINEL_Y = 1.7976931348623157e+308
 def _wrap_to_pi(x):
     return (x + np.pi) % (2*np.pi) - np.pi
 
-def _arc_points_from_sagitta(p0, p1, h, ds_target=2e-4, max_pts=2000):
+def _arc_points_from_sagitta(p0, p1, h, ds_target=2e-4, max_pts=2000, left_positive=False):
     """
-    Generate dense points approximating the circular arc defined by endpoints p0,p1 and sagitta h.
-    Output: polyline points along that arc (includes endpoints).
+    left_positive=True :  h>0 -> chord(p0->p1) 左側鼓出
+    left_positive=False: h>0 -> chord(p0->p1) 右側鼓出  (← 你現在很可能需要這個)
     """
     p0 = np.asarray(p0, float)
     p1 = np.asarray(p1, float)
@@ -26,41 +26,35 @@ def _arc_points_from_sagitta(p0, p1, h, ds_target=2e-4, max_pts=2000):
         return np.array([p0, p1])
 
     t = chord / L
-    n_left = np.array([-t[1], t[0]])  # left normal of chord
-    sgn = 1.0 if h > 0 else -1.0
+    n_left = np.array([-t[1], t[0]])  # chord 左法向
     h0 = abs(h)
 
-    # radius from sagitta
+    # 半徑
     R = (L * L) / (8.0 * h0) + (h0 / 2.0)
 
     mid = 0.5 * (p0 + p1)
-    a = R - h0  # center offset from chord midpoint
+    a = R - h0  # 圓心到 chord 中點距離
+
+    # ✅ 方向：把你的 h 正負映射到 n_left
+    # 若 left_positive=False，就等效把左右整個翻轉
+    sgn = 1.0 if h > 0 else -1.0
+    if not left_positive:
+        sgn = -sgn
+
     c = mid + sgn * a * n_left
 
+    # 角度（強制 minor arc）
     v0 = p0 - c
     v1 = p1 - c
     ang0 = np.arctan2(v0[1], v0[0])
     ang1 = np.arctan2(v1[1], v1[0])
+    dtheta = _wrap_to_pi(ang1 - ang0)
 
-    d = _wrap_to_pi(ang1 - ang0)
-    # choose correct sweep direction so that arc bulges to correct side
-    candidates = [d, d + 2*np.pi, d - 2*np.pi]
-    best_dd, best_err = None, None
-    for dd in candidates:
-        angm = ang0 + 0.5*dd
-        pm = c + R*np.array([np.cos(angm), np.sin(angm)])
-        side = np.dot(pm - mid, n_left)  # left positive
-        err = abs(side - sgn*h0)
-        if best_err is None or err < best_err:
-            best_err = err
-            best_dd = dd
-
-    dtheta = best_dd
     arc_len = abs(dtheta) * R
     nseg = int(np.clip(np.ceil(arc_len / ds_target), 8, max_pts))
     thetas = np.linspace(ang0, ang0 + dtheta, nseg)
-    return c + R*np.column_stack([np.cos(thetas), np.sin(thetas)])
 
+    return c + R * np.column_stack([np.cos(thetas), np.sin(thetas)])
 def densify_path_with_arc_height(raw_pts, ds_arc=2e-4):
     """
     Parse your mixed format:
