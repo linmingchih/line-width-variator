@@ -11,6 +11,7 @@ class EdbManager:
         self.edb = None
         self.edb_path = None
         self.variation_data = {}
+        self.generated_data = {} # Map of original_id -> {points, width, layer, net, type}
 
     def load_edb(self, path):
         if self.edb:
@@ -20,6 +21,8 @@ class EdbManager:
                 pass
         
         self.edb_path = path
+        self.generated_data = {}
+        self.variation_data = {}
         # You might want to make the version configurable
         self.edb = Edb(path, edbversion="2024.1") 
         return self.get_nets()
@@ -33,20 +36,25 @@ class EdbManager:
             primitives = []
             for p in net.primitives:
                 if p.type == "Path": # Only interested in Paths for now
-                    # DEBUG: Print first primitive points
-                    if not nets_data:
-                        print(f"DEBUG: First Path Points: {p.center_line[:5]}")
-                        print(f"DEBUG: Type of center_line: {type(p.center_line)}")
-                        if len(p.center_line) > 0:
-                            print(f"DEBUG: Type of point: {type(p.center_line[0])}")
-
-                    prim_data = {
-                        "id": p.id,
-                        "type": p.type,
-                        "layer": p.layer_name,
-                        "width": p.width,
-                        "points": p.center_line, # List of [x, y] or [x, y, h]
-                    }
+                    
+                    # Check if we have generated data for this primitive
+                    if p.id in self.generated_data:
+                        gen_data = self.generated_data[p.id]
+                        prim_data = {
+                            "id": p.id,
+                            "type": "Polygon", # It's now a polygon
+                            "layer": p.layer_name,
+                            "width": 0, # Polygons don't have a single width
+                            "points": gen_data["points"], 
+                        }
+                    else:
+                        prim_data = {
+                            "id": p.id,
+                            "type": p.type,
+                            "layer": p.layer_name,
+                            "width": p.width,
+                            "points": p.center_line, # List of [x, y] or [x, y, h]
+                        }
                     primitives.append(prim_data)
             
             if primitives:
@@ -59,75 +67,69 @@ class EdbManager:
 
     def save_edb(self, path):
         print(f"DEBUG: EdbManager.save_edb called with path: {path}")
-        if self.edb:
-            try:
-                print(f"DEBUG: Calling self.edb.save_edb_as({path})")
-                self.edb.save_edb_as(path)
-                print("DEBUG: save_edb_as completed")
-                return True
-            except Exception as e:
-                print(f"DEBUG: Error in save_edb_as: {e}")
-                return False
-        print("DEBUG: self.edb is None")
-        return False
+        if not self.edb:
+            print("DEBUG: self.edb is None")
+            return False
+
+        try:
+            # 1. Save As to the new path
+            print(f"DEBUG: Calling self.edb.save_edb_as({path})")
+            self.edb.save_edb_as(path)
+            
+            # 2. Apply variations to the NEW file (which is now self.edb)
+            # Note: save_edb_as usually switches the active EDB to the new one.
+            # We need to verify if self.edb is now pointing to the new file.
+            # Usually pyedb updates the internal reference.
+            
+            print(f"DEBUG: Applying {len(self.generated_data)} variations to saved file")
+            
+            # We need to iterate through generated_data and apply changes.
+            # The IDs should be preserved after Save As.
+            
+            for orig_id, data in self.generated_data.items():
+                # Find the primitive in the current EDB
+                # We have to iterate to find it because we don't have direct access by ID
+                # This is inefficient but necessary if we can't lookup by ID.
+                # Or we can iterate nets again.
+                
+                found = False
+                for net_name, net in self.edb.nets.nets.items():
+                    for p in net.primitives:
+                        if p.id == orig_id:
+                            # Found it!
+                            # Create polygon
+                            poly_points = data["points"]
+                            self.edb.modeler.create_polygon_from_points(poly_points, p.layer_name, net_name)
+                            p.delete()
+                            found = True
+                            break
+                    if found:
+                        break
+                
+                if not found:
+                    print(f"WARNING: Could not find primitive {orig_id} to apply variation")
+
+            # Save again to persist changes
+            self.edb.save_edb()
+            print("DEBUG: save_edb completed")
+            return True
+        except Exception as e:
+            print(f"DEBUG: Error in save_edb: {e}")
+            return False
 
     def apply_variation(self, settings):
         if not self.edb:
             return False
 
-        # settings example:
-        # {
-        #   "mu_w": 0.0001, # Optional override? Or use primitive width?
-        #   "sigma_w": 0.00002,
-        #   "L_c": 0.002,
-        #   "model": "matern32",
-        #   "ds_arc": 2e-4,
-        #   "n_resample": 1200,
-        #   "w_min": 8e-5,
-        #   "w_max": 2e-4,
-        #   "seed": 7 # Or random
-        # }
+        # Clear previous generation
+        self.generated_data = {}
+        self.variation_data = {}
 
         # For now, apply to ALL paths. Later we can support selection.
         for net_name, net in self.edb.nets.nets.items():
             for p in net.primitives:
                 if p.type != "Path":
                     continue
-                
-                # Use primitive width as mu_w unless specified otherwise?
-                # The user requirement says "mu_w: default line width" in settings panel.
-                # But usually we want to vary around the EXISTING width.
-                # Let's assume if mu_w is not provided or -1, use p.width.
-                
-                mu_w = float(settings.get("mu_w", p.width))
-                # If user explicitly sets mu_w, use it. If they want relative, we need logic.
-                # The requirements say "mu_w: default line width" in the panel.
-                # Let's assume the panel sends the value. 
-                # BUT, if we have many lines with DIFFERENT widths, setting a single global mu_w is wrong.
-                # The prompt says "mu_w: default line width" in Left Settings Panel.
-                # It also says "sigma_w: percent of mu_w".
-                # It seems the user wants to apply a global setting? 
-                # OR, maybe "mu_w" in the panel is just a display/default, and we should use the primitive's width?
-                # "sigma_w: percent of mu_w" suggests relative variation.
-                
-                # Let's interpret:
-                # mu_w in settings might be an override, or we use p.width.
-                # Given "sigma_w: percent of mu_w", it implies sigma is relative.
-                
-                # Let's use p.width as the base mean if we want to preserve design intent.
-                # But if the user wants to CHANGE the width globally, they use the input.
-                # Let's stick to: Use p.width as base, and sigma is percentage of that.
-                # Wait, the UI has an input for `mu_w`. 
-                # If the user inputs a value, should we use it for ALL lines? That might break things if lines have different widths.
-                # Maybe `mu_w` input is only relevant if we are creating new lines or forcing a width.
-                # Let's assume for now: Use p.width from the primitive, and interpret sigma_w as a percentage.
-                # AND ignore the `mu_w` input from the panel for the *calculation* unless we really want to force it.
-                # OR, maybe the `mu_w` input is just for the "default" value shown?
-                
-                # Let's look at `gemini.md`: "mu_w: default line width".
-                # Maybe it means the user CAN set it.
-                # Let's try to support both: if user provides it, use it? 
-                # Actually, safe bet: Use p.width.
                 
                 current_width = p.width
                 
@@ -165,44 +167,23 @@ class EdbManager:
                     plot=False
                 )
                 
+                # Store in generated_data
+                # We convert poly to list of lists
+                poly_list = [list(pt) for pt in poly]
+                
+                self.generated_data[p.id] = {
+                    "points": poly_list,
+                    "width": current_width, # Original width
+                    "layer": p.layer_name,
+                    "net": net_name
+                }
+                
                 # Store stats
-                # We need to store it by the NEW primitive ID? 
-                # Or maybe we can just store it by the original ID if we are just displaying?
-                # But the original primitive is deleted.
-                # The new primitive will have a new ID.
-                # However, the user flow is: Select primitive -> Show stats.
-                # After generation, the tree view needs to refresh to show new primitives?
-                # Or we just update the geometry.
-                # If we delete and create new, the ID changes.
-                # So we need to handle that.
-                
-                # For now, let's just store it. We might need to return a map of old_id -> new_id
-                # But wait, create_polygon_from_points returns the new primitive?
-                # pyedb's create_polygon_from_points usually returns True or the object.
-                # Let's check pyedb source or docs if possible. 
-                # Assuming it returns the primitive or we can find it.
-                # Actually, `create_polygon_from_points` in pyedb might just return bool.
-                
-                # If we can't get the new ID easily, we might have a problem linking the stats to the new primitive.
-                # But for the MVP, maybe we just assume the user re-selects?
-                # Or we can try to find the new primitive.
-                
-                # Let's store the data in a temporary structure or attach it to the net name + layer?
-                # Unique identifier: Net Name + Layer + ...?
-                # Primitives in a net are a list.
-                
-                # Let's just store it for now.
                 self.variation_data[p.id] = {
                     "s": s.tolist(),
                     "w_s": w_s.tolist(),
                     "mu_w": current_width
                 }
-
-                # Update EDB
-                # We need to replace the primitive.
-                # create_polygon_from_points is what was used in the user's edit to main.py
-                self.edb.modeler.create_polygon_from_points(list(poly), p.layer_name, net_name)
-                p.delete()
         
         return True
 
