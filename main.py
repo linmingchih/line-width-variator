@@ -24,5 +24,5 @@ for net_name, net in edb.nets.nets.items():
         plot=False)
 
     edb.modeler.create_polygon_from_points(list(poly), p.layer_name, net_name)
-
+    p.delete()
 edb.save_edb_as(new_edb_path)
